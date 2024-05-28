@@ -1,15 +1,14 @@
+import {makeId, getRoomIndex, findRoom} from "./helpers.js";
+import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
-import {makeId, getRoomIndex, findRoom} from "./helpers.js";
 
-const httpServer = createServer();
+const app = express();
+const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
-  },
-  connectionStateRecovery: {
-    maxDisconnectionDuration: 10 * 60 * 1000,
-    skipMiddlewares: true,
+    origin: ["*"],
+    methods: ["GET", "POST"],
   },
 });
 
@@ -51,5 +50,9 @@ const onConnection = (socket) => {
 };
 
 io.on("connection", onConnection);
+
+app.get("/", (req, res) => {
+  res.send("Hello visitor!");
+});
 
 httpServer.listen(4000);
