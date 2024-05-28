@@ -37,7 +37,7 @@ const onConnection = (socket) => {
       io.to(socket.id).emit("room:join", new Error("Room not found"));
     } else {
       socket.join(room_id);
-      console.log("joine room: " + room_id);
+      console.log("joined room: " + room_id);
       io.to(socket.id).emit(
         "room:join",
         active_rooms[getRoomIndex(active_rooms, room_id)]
