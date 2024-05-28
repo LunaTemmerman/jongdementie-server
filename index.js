@@ -38,7 +38,7 @@ const onConnection = (socket) => {
     } else {
       socket.join(room_id);
       console.log("joine room: " + room_id);
-      socket.emit(
+      io.to(socket.id).emit(
         "room:join",
         active_rooms[getRoomIndex(active_rooms, room_id)]
       );
