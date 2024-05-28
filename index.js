@@ -7,6 +7,10 @@ const io = new Server(httpServer, {
   cors: {
     origin: "*",
   },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 10 * 60 * 1000,
+    skipMiddlewares: true,
+  },
 });
 
 const active_rooms = [];
@@ -43,6 +47,7 @@ const onConnection = (socket) => {
     console.log("detected stress: " + room_id);
     io.to(room_id).emit("stress:detected");
   });
+  socket.on("disconnect", () => {});
 };
 
 io.on("connection", onConnection);
