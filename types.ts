@@ -1,0 +1,5 @@
+type Room = {
+  id: String;
+};
+
+
