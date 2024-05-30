@@ -25,6 +25,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const fbapp = initializeApp(firebaseConfig);
 const db = getFirestore(fbapp);
+const datapointsBatchSize = 300;
+const datapointMaps = [];
 
 const app = express();
 const httpServer = createServer(app);
@@ -70,26 +72,37 @@ const onConnection = (socket) => {
   });
   socket.on("datapoints:received", async (room_id, data) => {
     try {
-      const docRef = doc(collection(db, "datapoints"), room_id);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) {
-        // Create the document if it does not exist
-        await setDoc(docRef, {
-          room_id: room_id,
-          created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
-          datapoints: [data],
-        });
-      } else {
-        await updateDoc(docRef, {
-          datapoints: arrayUnion(data),
-        });
+      if (!datapointMaps[room_id]) {
+        datapointMaps[room_id] = [];
       }
-      console.log(`document created or updated with room_id: ${room_id}`);
+      datapointMaps[room_id].push(data);
+
+      // If batch size is reached, write to Firestore
+      if (datapointMaps[room_id].length >= datapointsBatchSize) {
+        const docRef = doc(collection(db, "datapoints"), room_id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          // Create the document if it does not exist
+          await setDoc(docRef, {
+            room_id: room_id,
+            created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
+            datapoints: datapointMaps[room_id],
+          });
+        } else {
+          // Update the document if it exists
+          await updateDoc(docRef, {
+            datapoints: arrayUnion(...datapointMaps[room_id]),
+          });
+        }
+        console.log(`Batch write completed for room_id: ${room_id}`);
+
+        // Clear the array for the next batch
+        datapointMaps[room_id] = [];
+      }
     } catch (error) {
       console.error("Error adding or updating document: ", error);
     }
-    console.log(`document created with id: ${docRef?.id}`);
   });
   socket.on("stress:detect", async (room_id) => {
     try {
