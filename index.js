@@ -75,7 +75,10 @@ const onConnection = (socket) => {
       if (!datapointMaps[room_id]) {
         datapointMaps[room_id] = [];
       }
-      datapointMaps[room_id].push(data);
+      datapointMaps[room_id].push({
+        data,
+        created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
+      });
 
       // If batch size is reached, write to Firestore
       if (datapointMaps[room_id].length >= datapointsBatchSize) {
@@ -86,22 +89,23 @@ const onConnection = (socket) => {
           // Create the document if it does not exist
           await setDoc(docRef, {
             room_id: room_id,
-            created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
-            datapoints: datapointMaps[room_id],
+            datapointMaps: [datapointMaps[room_id]],
           });
         } else {
           // Update the document if it exists
           await updateDoc(docRef, {
-            datapoints: arrayUnion(...datapointMaps[room_id]),
+            datapointMaps: arrayUnion(datapointMaps[room_id]),
           });
         }
         console.log(`Batch write completed for room_id: ${room_id}`);
 
-        // Clear the array for the next batch
         datapointMaps[room_id] = [];
       }
     } catch (error) {
-      console.error("Error adding or updating document: ", error);
+      console.error(
+        "Error adding or updating document (datapoint-received): ",
+        error
+      );
     }
   });
   socket.on("stress:detect", async (room_id) => {
@@ -127,7 +131,9 @@ const onConnection = (socket) => {
           detections: arrayUnion(timestamp),
         });
       }
-      console.log(`document created or updated with room_id: ${room_id}`);
+      console.log(
+        `document created or updated with room_id (stress-detected): ${room_id}`
+      );
     } catch (error) {
       console.error("Error adding or updating document: ", error);
     }
