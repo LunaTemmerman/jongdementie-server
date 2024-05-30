@@ -2,6 +2,21 @@ import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
 import {makeId, getRoomIndex, findRoom} from "./helpers.js";
+import {initializeApp} from "firebase/app";
+import {addDoc, collection, getFirestore} from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBVZ1wJJvYRDLt30A8R_NDyKAsExUjz-as",
+  authDomain: "jongdementie-mobile.firebaseapp.com",
+  projectId: "jongdementie-mobile",
+  storageBucket: "jongdementie-mobile.appspot.com",
+  messagingSenderId: "935504245196",
+  appId: "1:935504245196:web:5269f69066b283d56fed69",
+};
+
+// Initialize Firebase
+const fbapp = initializeApp(firebaseConfig);
+const db = getFirestore(fbapp);
 
 const app = express();
 const httpServer = createServer(app);
@@ -45,9 +60,20 @@ const onConnection = (socket) => {
       io.to(room_id).emit("watch:connected");
     }
   });
-  socket.on("stress:detect", (room_id) => {
+  socket.on("datapoints:received", async (room_id, data) => {
+    const docRef = await addDoc(collection(db, `datapoints/${room_id}`), {
+      created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
+      ...data,
+    });
+    console.log(`document created with id: ${docRef?.id}`);
+  });
+  socket.on("stress:detect", async (room_id) => {
     console.log("detected stress: " + room_id);
     io.to(room_id).emit("stress:detected");
+    const docRef = await addDoc(`/detections/${room_id}`, {
+      created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
+    });
+    console.log(`document created with id: ${docRef?.id}`);
   });
   socket.on("disconnect", () => {});
 };
