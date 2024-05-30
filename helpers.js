@@ -1,5 +1,5 @@
 import {collection, doc, setDoc} from "firebase/firestore";
-import {db} from ".";
+import {db} from "./index.js";
 
 export function makeId() {
   let id = "";
