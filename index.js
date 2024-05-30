@@ -1,7 +1,12 @@
 import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
-import {makeId, getRoomIndex, findRoom} from "./helpers.js";
+import {
+  makeId,
+  getRoomIndex,
+  findRoom,
+  writeBatchToFirestore,
+} from "./helpers.js";
 import {initializeApp} from "firebase/app";
 import {
   getFirestore,
@@ -24,7 +29,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const fbapp = initializeApp(firebaseConfig);
-const db = getFirestore(fbapp);
+export const db = getFirestore(fbapp);
 const datapointsBatchSize = 300;
 const datapointMaps = [];
 
@@ -83,30 +88,10 @@ const onConnection = (socket) => {
 
       // If batch size is reached, write to Firestore
       if (datapointMaps[room_id].length >= datapointsBatchSize) {
-        const docRef = doc(collection(db, "datapoints"), room_id);
-        const docSnap = await getDoc(docRef);
-
-        if (!docSnap.exists()) {
-          // Create the document if it does not exist
-          await setDoc(docRef, {
-            room_id: room_id,
-            datapointMaps: [datapointMaps[room_id]],
-          });
-        } else {
-          // Update the document if it exists
-          await updateDoc(docRef, {
-            datapointMaps: arrayUnion(datapointMaps[room_id]),
-          });
-        }
-        console.log(`Batch write completed for room_id: ${room_id}`);
-
-        datapointMaps[room_id] = [];
+        await writeBatchToFirestore(room_id);
       }
     } catch (error) {
-      console.error(
-        "Error adding or updating document (datapoint-received): ",
-        error
-      );
+      console.error("Error handling received datapoints: ", error);
     }
   });
   socket.on("stress:detect", async (room_id) => {
