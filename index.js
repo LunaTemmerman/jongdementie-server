@@ -61,7 +61,8 @@ const onConnection = (socket) => {
     }
   });
   socket.on("datapoints:received", async (room_id, data) => {
-    const docRef = await addDoc(collection(db, `datapoints/${room_id}`), {
+    const docRef = await addDoc(collection(db, `datapoints}`), {
+      room_id: room_id,
       created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
       data,
     });
@@ -70,7 +71,8 @@ const onConnection = (socket) => {
   socket.on("stress:detect", async (room_id) => {
     console.log("detected stress: " + room_id);
     io.to(room_id).emit("stress:detected");
-    const docRef = await addDoc(`/detections/${room_id}`, {
+    const docRef = await addDoc(`/detections`, {
+      room_id,
       created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
     });
     console.log(`document created with id: ${docRef?.id}`);
