@@ -31,7 +31,7 @@ const firebaseConfig = {
 const fbapp = initializeApp(firebaseConfig);
 export const db = getFirestore(fbapp);
 const datapointsBatchSize = 300;
-const datapointMaps = [];
+export const datapointMaps = [];
 
 const app = express();
 const httpServer = createServer(app);
