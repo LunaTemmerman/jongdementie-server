@@ -63,7 +63,7 @@ const onConnection = (socket) => {
   socket.on("datapoints:received", async (room_id, data) => {
     const docRef = await addDoc(collection(db, `datapoints/${room_id}`), {
       created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
-      ...data,
+      data,
     });
     console.log(`document created with id: ${docRef?.id}`);
   });
