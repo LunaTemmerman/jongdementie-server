@@ -3,7 +3,15 @@ import {createServer} from "http";
 import {Server} from "socket.io";
 import {makeId, getRoomIndex, findRoom} from "./helpers.js";
 import {initializeApp} from "firebase/app";
-import {addDoc, collection, getFirestore} from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  getDoc,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBVZ1wJJvYRDLt30A8R_NDyKAsExUjz-as",
@@ -61,21 +69,55 @@ const onConnection = (socket) => {
     }
   });
   socket.on("datapoints:received", async (room_id, data) => {
-    const docRef = await addDoc(collection(db, "datapoints"), {
-      room_id: room_id,
-      created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
-      data,
-    });
+    try {
+      const docRef = doc(collection(db, "datapoints"), room_id);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        // Create the document if it does not exist
+        await setDoc(docRef, {
+          room_id: room_id,
+          created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
+          datapoints: [data],
+        });
+      } else {
+        await updateDoc(docRef, {
+          datapoints: arrayUnion(data),
+        });
+      }
+      console.log(`document created or updated with room_id: ${room_id}`);
+    } catch (error) {
+      console.error("Error adding or updating document: ", error);
+    }
     console.log(`document created with id: ${docRef?.id}`);
   });
   socket.on("stress:detect", async (room_id) => {
-    console.log("detected stress: " + room_id);
-    io.to(room_id).emit("stress:detected");
-    const docRef = await addDoc(collection(db, "detections"), {
-      room_id,
-      created_at: `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`,
-    });
-    console.log(`document created with id: ${docRef?.id}`);
+    try {
+      console.log("detected stress: " + room_id);
+      io.to(room_id).emit("stress:detected");
+
+      const docRef = doc(collection(db, "detections"), room_id);
+      const docSnap = await getDoc(docRef);
+
+      const timestamp = `${new Date().toLocaleTimeString()} ${new Date().toLocaleDateString()}`;
+
+      if (!docSnap.exists()) {
+        // Create the document if it does not exist
+        await setDoc(docRef, {
+          room_id: room_id,
+          created_at: timestamp,
+          detections: [timestamp],
+        });
+      } else {
+        // Update the document if it exists
+        await updateDoc(docRef, {
+          detections: arrayUnion(timestamp),
+        });
+      }
+      console.log(`document created or updated with room_id: ${room_id}`);
+    } catch (error) {
+      console.error("Error adding or updating document: ", error);
+    }
   });
   socket.on("disconnect", () => {});
 };
