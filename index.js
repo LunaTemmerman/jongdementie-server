@@ -1,7 +1,7 @@
 import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
-import {useAzureSocketIO} from "@azure/web-pubsub-socket.io";
+// import {useAzureSocketIO} from "@azure/web-pubsub-socket.io";
 
 import {
   makeId,
@@ -47,10 +47,10 @@ const io = new Server(httpServer, {
     skipMiddlewares: true,
   },
 });
-useAzureSocketIO(io, {
-  hub: "bp_hub",
-  connectionString: process.argv[2] || process.env.Web_PubSub_ConnectionString,
-});
+// useAzureSocketIO(io, {
+//   hub: "bp_hub",
+//   connectionString: process.argv[2] || process.env.Web_PubSub_ConnectionString,
+// });
 
 const active_rooms = [];
 
