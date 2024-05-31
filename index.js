@@ -49,7 +49,7 @@ const io = new Server(httpServer, {
 });
 useAzureSocketIO(io, {
   hub: "bp_hub",
-  connectionString: process.argv[2],
+  connectionString: process.argv[2] || process.env.Web_PubSub_ConnectionString,
 });
 
 const active_rooms = [];
