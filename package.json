@@ -4,7 +4,6 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js \"Endpoint=https://jongdementiebp.webpubsub.azure.com;AccessKey=nX4Wzgg0wRS9sRknsABHHcv7IpAdNgWtVzFdkePWApY=;Version=1.0;\""
   },
   "keywords": [],
