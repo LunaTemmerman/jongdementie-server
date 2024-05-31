@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/web-pubsub-socket.io": "^1.1.0",
     "express": "^4.19.2",
     "firebase": "^10.12.2",
     "http": "^0.0.1-security",

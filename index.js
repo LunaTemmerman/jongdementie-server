@@ -1,6 +1,8 @@
 import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
+import {useAzureSocketIO} from "@azure/web-pubsub-socket.io";
+
 import {
   makeId,
   getRoomIndex,
@@ -44,6 +46,10 @@ const io = new Server(httpServer, {
     maxDisconnectionDuration: 10 * 60 * 1000,
     skipMiddlewares: true,
   },
+});
+useAzureSocketIO(io, {
+  hub: "bp_hub",
+  connectionString: process.argv[2],
 });
 
 const active_rooms = [];
