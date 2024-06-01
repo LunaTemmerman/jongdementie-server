@@ -29,7 +29,6 @@ const firebaseConfig = {
   appId: "1:935504245196:web:5269f69066b283d56fed69",
 };
 
-// Initialize Firebase
 const fbapp = initializeApp(firebaseConfig);
 export const db = getFirestore(fbapp);
 const datapointsBatchSize = 300;
@@ -43,14 +42,10 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"],
   },
   connectionStateRecovery: {
-    maxDisconnectionDuration: 10 * 60 * 1000,
+    maxDisconnectionDuration: Infinity,
     skipMiddlewares: true,
   },
 });
-// useAzureSocketIO(io, {
-//   hub: "bp_hub",
-//   connectionString: process.argv[2] || process.env.Web_PubSub_ConnectionString,
-// });
 
 const active_rooms = [];
 
@@ -64,6 +59,7 @@ const onConnection = (socket) => {
     socket.join(room_id);
     const room = {
       id: room_id,
+      clients: [socket.id],
     };
     active_rooms.push(room);
     console.log("created room: " + room_id);
@@ -73,6 +69,7 @@ const onConnection = (socket) => {
     if (!findRoom(active_rooms, room_id)) {
       io.to(socket.id).emit("room:join", new Error("Room not found"));
     } else {
+      findRoom(active_rooms, room_id).clients.push(socket.id);
       socket.join(room_id);
       console.log("joined room: " + room_id);
       io.to(socket.id).emit(
@@ -95,6 +92,7 @@ const onConnection = (socket) => {
       // If batch size is reached, write to Firestore
       if (datapointMaps[room_id].length >= datapointsBatchSize) {
         await writeBatchToFirestore(room_id);
+        datapointMaps[room_id] = [];
       }
     } catch (error) {
       console.error("Error handling received datapoints: ", error);
@@ -130,7 +128,23 @@ const onConnection = (socket) => {
       console.error("Error adding or updating document: ", error);
     }
   });
-  socket.on("disconnect", () => {});
+  socket.on("disconnect", (reason) => {
+    console.log(socket.id + " is disconnected beacause " + reason);
+    for (const room of active_rooms) {
+      const clientIndex = room.clients.indexOf(socket.id);
+      if (clientIndex !== -1) {
+        room.clients.splice(clientIndex, 1);
+        io.to(room.id).emit("client:disconnect");
+        if (room.clients.length === 0) {
+          const roomIndex = active_rooms.indexOf(room);
+          if (roomIndex !== -1) {
+            active_rooms.splice(roomIndex, 1);
+          }
+        }
+        break;
+      }
+    }
+  });
 };
 
 io.on("connection", onConnection);
